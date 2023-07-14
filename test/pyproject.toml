@@ -1,0 +1,16 @@
+[project]
+name = "demo"
+version = "1.0.0"
+dependencies = [
+    'requests',
+]
+
+[project.scripts]
+demo = "demo:main [icon=python.ico]"
+
+[tool.pydumb]
+src = [
+    'demo.py',
+]
+py_version = '3.10.6'
+machine = 'win32'
