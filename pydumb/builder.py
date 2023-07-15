@@ -70,6 +70,8 @@ class Builder:
     @classmethod
     def from_path(cls, path):
         path = pathlib.Path(path).resolve()
+        if path.is_dir():
+            path = (path / 'pyproject.toml').resolve()
         if not path.is_file():
             raise ValueError
         data = tomllib.loads(path.read_text(encoding='utf-8'))
