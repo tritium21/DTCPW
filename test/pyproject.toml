@@ -11,7 +11,7 @@ demo = "demo:main [icon=python.ico]"
 [project.gui-scripts]
 demog = "demo:gui [icon=python.ico]"
 
-[tool.pydumb]
+[tool.winbundle]
 src = [
     'demo',
     'notdemo',

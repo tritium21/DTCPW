@@ -2,22 +2,22 @@ import argparse
 import pathlib
 import sys
 
-import pydumb
-import pydumb.newconfig
+import winbundle
+import winbundle.newconfig
 
 
 def build(args):
     config = args.pop('config')
-    builder = pydumb.Builder.from_path(config)
+    builder = winbundle.Builder.from_path(config)
     return builder.make_bundle(**args)
 
 
 def new(args):
     config = args.pop('config')
-    return pydumb.newconfig.new_config(config)
+    return winbundle.newconfig.new_config(config)
 
 def main(argv=None):
-    name = f'{sys.executable} -m pydumb' if __name__ == '__main__' else None
+    name = f'{sys.executable} -m winbundle' if __name__ == '__main__' else None
     parser = argparse.ArgumentParser(name)
 
     def help_and_exit(args):

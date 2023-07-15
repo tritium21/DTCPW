@@ -53,16 +53,16 @@ def new_config(path):
         if gui_scripts:
             data['project']['gui-scripts'] = gui_scripts
     data['tool'] = {}
-    data['tool']['pydumb'] = {}
+    data['tool']['winbundle'] = {}
     src = questionary.text("Where are the source files, relative to this directory?", multiline=True).ask()
-    data['tool']['pydumb']['src'] = [s.strip() for s in src.strip().splitlines()]
-    data['tool']['pydumb']['need_tkinter'] = questionary.confirm("Is tkinter required?").ask()
+    data['tool']['winbundle']['src'] = [s.strip() for s in src.strip().splitlines()]
+    data['tool']['winbundle']['need_tkinter'] = questionary.confirm("Is tkinter required?").ask()
     py_version = questionary.text(
         "(Optional) What python version is required (X.Y.Z format)?",
         instruction="Press enter to use the version of python used to run this."
     ).ask()
     if py_version:
-        data['tool']['pydumb']['py_version'] = py_version
+        data['tool']['winbundle']['py_version'] = py_version
     machine = questionary.select(
         "(Optional) What machine type is required?",
         instruction="Choose default to use the machine type currently executing.",
@@ -73,9 +73,5 @@ def new_config(path):
         ]
     ).ask()
     if machine != 'default':
-        data['tool']['pydumb']['machine'] = machine
+        data['tool']['winbundle']['machine'] = machine
     path.write_text(toml.dumps(data))
-
-
-if __name__ == '__main__':
-    new_config('test2')

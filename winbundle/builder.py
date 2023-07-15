@@ -9,7 +9,7 @@ import zipfile
 
 import distlib.scripts
 
-import pydumb.util
+import winbundle.util
 
 
 def _get_launcher(self, kind):
@@ -43,8 +43,8 @@ class Builder:
         version=None,
         dependencies=None,
         entrypoints=None,
-        machine=pydumb.util.this_machine()[0],
-        py_version=pydumb.util.this_machine()[1],
+        machine=winbundle.util.this_machine()[0],
+        py_version=winbundle.util.this_machine()[1],
         need_tkinter=False,
     ):
         self.name = name
@@ -83,15 +83,15 @@ class Builder:
             'gui': [f"{k} = {v}" for k, v in project.get('gui-scripts', {}).items()],
         }
         opts['dependencies'] = project.get('dependencies', [])
-        opts['files'] = data.get('tool', {}).get('pydumb', {}).get('src', [])
-        opts['need_tkinter'] = data.get('tool', {}).get('pydumb', {}).get('need_tkinter', False)
+        opts['files'] = data.get('tool', {}).get('winbundle', {}).get('src', [])
+        opts['need_tkinter'] = data.get('tool', {}).get('winbundle', {}).get('need_tkinter', False)
         version = project.get('version')
         if version:
             opts['version'] = version
-        machine = data.get('tool', {}).get('pydumb', {}).get('machine', None)
+        machine = data.get('tool', {}).get('winbundle', {}).get('machine', None)
         if machine:
             opts['machine'] = machine
-        py_version = data.get('tool', {}).get('pydumb', {}).get('py_version', None)
+        py_version = data.get('tool', {}).get('winbundle', {}).get('py_version', None)
         if py_version:
             opts['py_version'] = py_version
         return cls(**opts)
@@ -101,7 +101,7 @@ class Builder:
         file_path = self._cache_path / file_name
         if not file_path.exists():
             self._cache_path.mkdir(parents=True, exist_ok=True)
-            pydumb.util.fetch(url, file_path)
+            winbundle.util.fetch(url, file_path)
         return file_path
 
     def _download_python(self):
@@ -155,7 +155,7 @@ class Builder:
         files = []
         for spec, executable in specs:
             sm.executable = executable
-            sp, icon = pydumb.util.split_icon(spec)
+            sp, icon = winbundle.util.split_icon(spec)
             exes = sm.make(sp)
             self._add_icon(exes, icon)
             files.extend(exes)
@@ -203,11 +203,11 @@ class Builder:
     def _install_dependencies(self):
         args = [sys.executable, '-m', 'pip', 'install', '--target', str(self._output_path)]
         only_bin = False
-        if self.machine != pydumb.util.this_machine()[0]:
+        if self.machine != winbundle.util.this_machine()[0]:
             only_bin = True
             arch = 'win-amd64' if self.machine == 'amd64' else 'win32'
             args.extend(['--platform', arch])
-        if self.py_version != pydumb.util.this_machine()[1]:
+        if self.py_version != winbundle.util.this_machine()[1]:
             only_bin = True
             args.extend(['--python-version', self.py_version])
         if only_bin:
