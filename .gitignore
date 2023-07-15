@@ -1,6 +1,5 @@
 build/
 release/
-
 env
 __pycache__
 *.py[cod]
