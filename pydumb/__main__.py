@@ -16,9 +16,14 @@ def new(args):
     config = args.pop('config')
     return pydumb.newconfig.new_config(config)
 
-
 def main(argv=None):
-    parser = argparse.ArgumentParser()
+    name = f'{sys.executable} -m pydumb' if __name__ == '__main__' else None
+    parser = argparse.ArgumentParser(name)
+
+    def help_and_exit(args):
+        parser.print_help()
+        return 1
+
     subparsers = parser.add_subparsers()
     build_parser = subparsers.add_parser('build')
     build_parser.add_argument(
@@ -59,7 +64,7 @@ def main(argv=None):
     new_parser.set_defaults(func=new)
     args = parser.parse_args(argv)
     args = vars(args)
-    func = args.pop('func')
+    func = args.pop('func', help_and_exit)
     return func(args)
 
 
