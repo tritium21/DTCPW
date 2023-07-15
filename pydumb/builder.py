@@ -57,7 +57,10 @@ class Builder:
         self._build_path = self.root / 'build'
         self._cache_path = self.root / '__cache__'
         self._output_path = self._build_path / self.name
-        self._final_path = self.root / 'dist' / f"{self.name}{'' if self.version is None else '-' + self.version}"
+        self._final_path = self.root / 'dist' / (
+            f"{self.name}{'' if self.version is None else '-' + self.version}"
+            f"-py{self.py_version}-{self.machine}"
+        )
         self.dependencies = [] if dependencies is None else dependencies
         self.files = files
         self._rh_path = self._cache_path / 'resourcehacker'
@@ -165,8 +168,8 @@ class Builder:
             self._has_wix = True
         installer = self._download_python_installer()
         dark = self._wix_path / 'dark.exe'
-        extract_build = self._cache_path / 'installer_extract'
-        tcltk_build = self._cache_path / 'tcltk'
+        extract_build = self._cache_path / f'installer_extract-{self.py_version}'
+        tcltk_build = self._cache_path / f'tcltk-{self.py_version}'
         tcltk_msi = extract_build / 'AttachedContainer' / 'tcltk.msi'
         if not tcltk_msi.is_file():
             subprocess.run([dark, installer, '-x', extract_build])
