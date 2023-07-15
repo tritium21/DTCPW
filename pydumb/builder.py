@@ -83,10 +83,10 @@ class Builder:
         self.py_version = py_version
         self.root = pathlib.Path(root).resolve()
         self._build_path = self.root / 'build'
-        self._cache_path = self._build_path / 'cache'
+        self._cache_path = self.root / '__cache__'
         self._rh_path = self._cache_path / 'resourcehacker'
         self._output_path = self._build_path / self.name
-        self._final_path = self.root / 'release' / f"{self.name}{'' if self.version is None else '-' + self.version}"
+        self._final_path = self.root / 'dist' / f"{self.name}{'' if self.version is None else '-' + self.version}"
         self.dependencies = [] if dependencies is None else dependencies
         self.files = files
         self._has_rh = False
@@ -217,7 +217,7 @@ class Builder:
 
     def _clean_output(self, source_too=False):
         torm = []
-        torm.extend(self._output_path.rglob('__pychache__'))
+        torm.extend(self._output_path.rglob('__pycache__'))
         if source_too:
             torm.extend(self._output_path.rglob('*.py'))
         torm.extend(self._output_path.glob('*.dist-info'))
@@ -245,7 +245,12 @@ class Builder:
             base_dir=str(self._final_path.name),
         )
 
+    def _clear_build(self):
+        if self._build_path.exists():
+            shutil.rmtree(self._build_path)
+
     def make_bundle(self, compile=True, optimize=1, release=True, make_zip=True):
+        self._clear_build()
         python = self._download_python()
         self._extract_python(python)
         self._install_dependencies()
