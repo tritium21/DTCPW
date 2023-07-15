@@ -168,8 +168,10 @@ class Builder:
         extract_build = self._cache_path / 'installer_extract'
         tcltk_build = self._cache_path / 'tcltk'
         tcltk_msi = extract_build / 'AttachedContainer' / 'tcltk.msi'
-        subprocess.run([dark, installer, '-x', extract_build])
-        subprocess.run(['msiexec', '/a', tcltk_msi, '/qn', f'TARGETDIR={tcltk_build}'])
+        if not tcltk_msi.is_file():
+            subprocess.run([dark, installer, '-x', extract_build])
+        if not tcltk_build.is_dir():
+            subprocess.run(['msiexec', '/a', tcltk_msi, '/qn', f'TARGETDIR={tcltk_build}'])
         for path in (tcltk_build / 'DLLs').iterdir():
             shutil.copy(path, self._output_path)
         shutil.copytree((tcltk_build / 'Lib' / 'tkinter'), (self._output_path / 'tkinter'))
