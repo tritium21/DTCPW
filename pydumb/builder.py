@@ -3,8 +3,6 @@
 # still kinda janky (and needs a UI yet), and I hope the
 # copyright will scare you into not using it
 import pathlib
-import platform
-import re
 import shutil
 import subprocess
 import sys
@@ -15,20 +13,7 @@ import zipfile
 
 import distlib.scripts
 
-
-def split_icon(spec):
-    result = re.split(r"\s*\[([^\]]+)\]", spec)
-    if len(result) == 1:
-        return spec, None
-    cmd = result[0]
-    flags = dict(x.partition('=')[::2] for x in re.split(r",\s*", result[1]))
-    icon = flags.pop('icon', None)
-    if not icon:
-        return spec, None
-    if flags:
-        newflags = [f"{k}={v}" if v else k for k, v in flags.items()]
-        return f"{cmd} [{','.join(newflags)}]", icon
-    return cmd, icon
+import pydumb.util
 
 
 def _get_launcher(self, kind):
@@ -37,6 +22,9 @@ def _get_launcher(self, kind):
         bits = '64'
     else:
         bits = '32'
+    kind = 't'
+    if self.executable == 'pythonw.exe':
+        kind = 'w'
     platform_suffix = ''
     name = '%s%s%s.exe' % (kind, bits, platform_suffix)
     distlib_package = distlib.scripts.__name__.rsplit('.', 1)[0]
@@ -50,20 +38,6 @@ def _get_launcher(self, kind):
 distlib.scripts.ScriptMaker._get_launcher = _get_launcher
 
 
-def this_machine():
-    return 'amd64' if platform.architecture()[0] == '64bit' else 'win32'
-
-
-def fetch(url, target):
-    target = pathlib.Path(target).resolve()
-    if target.is_file():
-        return
-    with urllib.request.urlopen(url) as s:
-        if s.code != 200:
-            raise s
-        target.write_bytes(s.read())
-
-
 class Builder:
     def __init__(
         self,
@@ -73,23 +47,25 @@ class Builder:
         version=None,
         dependencies=None,
         entrypoints=None,
-        machine=this_machine(),
-        py_version=platform.python_version()
+        machine=pydumb.util.this_machine()[0],
+        py_version=pydumb.util.this_machine()[1],
+        need_tkinter=False,
     ):
         self.name = name
         self.entrypoints = entrypoints
         self.machine = machine
         self.version = version
         self.py_version = py_version
+        self.need_tkinter = need_tkinter
         self.root = pathlib.Path(root).resolve()
         self._build_path = self.root / 'build'
         self._cache_path = self.root / '__cache__'
-        self._rh_path = self._cache_path / 'resourcehacker'
         self._output_path = self._build_path / self.name
         self._final_path = self.root / 'dist' / f"{self.name}{'' if self.version is None else '-' + self.version}"
         self.dependencies = [] if dependencies is None else dependencies
         self.files = files
-        self._has_rh = False
+        self._rh_path = self._cache_path / 'resourcehacker'
+        self._wix_path = self._cache_path / 'wix'
 
     @classmethod
     def from_path(cls, path):
@@ -105,8 +81,9 @@ class Builder:
             'con': [f"{k} = {v}" for k, v in project.get('scripts', {}).items()],
             'gui': [f"{k} = {v}" for k, v in project.get('gui-scripts', {}).items()],
         }
-        opts['dependencies'] = project['dependencies']
-        opts['files'] = data['tool']['pydumb']['src']
+        opts['dependencies'] = project.get('dependencies', [])
+        opts['files'] = data['tool']['pydumb'].get('src', [])
+        opts['need_tkinter'] = data['tool']['pydumb'].get('need_tkinter', False)
         version = project['version']
         if version:
             opts['version'] = version
@@ -123,16 +100,31 @@ class Builder:
         file_path = self._cache_path / file_name
         if not file_path.exists():
             self._cache_path.mkdir(parents=True, exist_ok=True)
-            fetch(url, file_path)
+            pydumb.util.fetch(url, file_path)
         return file_path
 
     def _download_python(self):
         url = f"https://www.python.org/ftp/python/{self.py_version}/python-{self.py_version}-embed-{self.machine}.zip"
         return self._download_item(url)
 
+    def _download_wix(self):
+        url = "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip"
+        return self._download_item(url)
+
+    def _download_python_installer(self):
+        url = (
+            f"https://www.python.org/ftp/python/{self.py_version}/python-{self.py_version}"
+            f"{'-' + self.machine if self.machine != 'win32' else ''}.exe"
+        )
+        return self._download_item(url)
+
     def _download_resource_hacker(self):
         url = "http://www.angusj.com/resourcehacker/resource_hacker.zip"
         return self._download_item(url)
+
+    def _extract_wix(self, path):
+        with zipfile.ZipFile(path) as zf:
+            zf.extractall(self._wix_path)
 
     def _extract_resource_hacker(self, path):
         with zipfile.ZipFile(path) as zf:
@@ -150,7 +142,7 @@ class Builder:
             if entry.is_file():
                 shutil.copy2(entry, self._output_path)
                 continue
-            shutil.copytree(entry, self._output_path)
+            shutil.copytree(entry, self._output_path / entry.name)
 
     def _make_entrypoints(self):
         sm = distlib.scripts.ScriptMaker(self.root, self._output_path, add_launchers=True)
@@ -162,16 +154,34 @@ class Builder:
         files = []
         for spec, executable in specs:
             sm.executable = executable
-            sp, icon = split_icon(spec)
+            sp, icon = pydumb.util.split_icon(spec)
             exes = sm.make(sp)
             self._add_icon(exes, icon)
             files.extend(exes)
         return files
 
+    def _install_tkinter(self):
+        if not self._wix_path.is_dir():
+            wix = self._download_wix()
+            self._extract_wix(wix)
+            self._has_wix = True
+        installer = self._download_python_installer()
+        dark = self._wix_path / 'dark.exe'
+        extract_build = self._cache_path / 'installer_extract'
+        tcltk_build = self._cache_path / 'tcltk'
+        tcltk_msi = extract_build / 'AttachedContainer' / 'tcltk.msi'
+        subprocess.run([dark, installer, '-x', extract_build])
+        subprocess.run(['msiexec', '/a', tcltk_msi, '/qn', f'TARGETDIR={tcltk_build}'])
+        for path in (tcltk_build / 'DLLs').iterdir():
+            shutil.copy(path, self._output_path)
+        shutil.copytree((tcltk_build / 'Lib' / 'tkinter'), (self._output_path / 'tkinter'))
+        shutil.copytree((tcltk_build / 'Lib' / 'idlelib'), (self._output_path / 'idlelib'))
+        shutil.copytree((tcltk_build / 'tcl'), (self._output_path / 'tcl'))
+
     def _add_icon(self, exes, icon):
         if not icon:
             return
-        if not self._has_rh:
+        if not self._rh_path.is_dir():
             rh = self._download_resource_hacker()
             self._extract_resource_hacker(rh)
             self._has_rh = True
@@ -190,11 +200,11 @@ class Builder:
     def _install_dependencies(self):
         args = [sys.executable, '-m', 'pip', 'install', '--target', str(self._output_path)]
         only_bin = False
-        if self.machine != this_machine():
+        if self.machine != pydumb.util.this_machine()[0]:
             only_bin = True
             arch = 'win-amd64' if self.machine == 'amd64' else 'win32'
             args.extend(['--platform', arch])
-        if self.py_version != platform.version:
+        if self.py_version != pydumb.util.this_machine()[1]:
             only_bin = True
             args.extend(['--python-version', self.py_version])
         if only_bin:
@@ -254,6 +264,8 @@ class Builder:
         python = self._download_python()
         self._extract_python(python)
         self._install_dependencies()
+        if self.need_tkinter:
+            self._install_tkinter()
         self._copy_source()
         self._make_entrypoints()
         if compile:
