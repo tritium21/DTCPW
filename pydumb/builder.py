@@ -83,15 +83,15 @@ class Builder:
             'gui': [f"{k} = {v}" for k, v in project.get('gui-scripts', {}).items()],
         }
         opts['dependencies'] = project.get('dependencies', [])
-        opts['files'] = data['tool']['pydumb'].get('src', [])
-        opts['need_tkinter'] = data['tool']['pydumb'].get('need_tkinter', False)
-        version = project['version']
+        opts['files'] = data.get('tool', {}).get('pydumb', {}).get('src', [])
+        opts['need_tkinter'] = data.get('tool', {}).get('pydumb', {}).get('need_tkinter', False)
+        version = project.get('version')
         if version:
             opts['version'] = version
-        machine = data['tool']['pydumb'].get('machine', None)
+        machine = data.get('tool', {}).get('pydumb', {}).get('machine', None)
         if machine:
             opts['machine'] = machine
-        py_version = data['tool']['pydumb'].get('py_version', None)
+        py_version = data.get('tool', {}).get('pydumb', {}).get('py_version', None)
         if py_version:
             opts['py_version'] = py_version
         return cls(**opts)
