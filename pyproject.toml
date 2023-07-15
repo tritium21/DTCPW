@@ -7,4 +7,6 @@ name = "pydumb"
 version = "0.1.0"
 dependencies = [
     "distlib",
+    "questionary",
+    "toml",
 ]
