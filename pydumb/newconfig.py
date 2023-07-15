@@ -57,11 +57,15 @@ def new_config(path):
     src = questionary.text("Where are the source files, relative to this directory?", multiline=True).ask()
     data['tool']['pydumb']['src'] = [s.strip() for s in src.strip().splitlines()]
     data['tool']['pydumb']['need_tkinter'] = questionary.confirm("Is tkinter required?").ask()
-    py_version = questionary.text("(Optional) What python version is required (X.Y.Z format)?").ask()
+    py_version = questionary.text(
+        "(Optional) What python version is required (X.Y.Z format)?",
+        instruction="Press enter to use the version of python used to run this."
+    ).ask()
     if py_version:
         data['tool']['pydumb']['py_version'] = py_version
     machine = questionary.select(
         "(Optional) What machine type is required?",
+        instruction="Choose default to use the machine type currently executing.",
         choices=[
             'default',
             'win32',
