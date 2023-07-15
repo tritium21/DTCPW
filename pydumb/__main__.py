@@ -1,7 +1,9 @@
 import argparse
+import pathlib
 import sys
 
 import pydumb
+import pydumb.newconfig
 
 
 def build(args):
@@ -10,13 +12,19 @@ def build(args):
     return builder.make_bundle(**args)
 
 
+def new(args):
+    config = args.pop('config')
+    return pydumb.newconfig.new_config(config)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
     build_parser = subparsers.add_parser('build')
     build_parser.add_argument(
         'config',
-        default='pyproject.toml'
+        default='pyproject.toml',
+        type=pathlib.Path
     )
     build_parser.add_argument(
         '--compile', '-c',
@@ -42,6 +50,13 @@ def main(argv=None):
         dest='make_zip'
     )
     build_parser.set_defaults(func=build)
+    new_parser = subparsers.add_parser('new')
+    new_parser.add_argument(
+        'config',
+        default='pyproject.toml',
+        type=pathlib.Path
+    )
+    new_parser.set_defaults(func=new)
     args = parser.parse_args(argv)
     args = vars(args)
     func = args.pop('func')
