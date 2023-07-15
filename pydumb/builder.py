@@ -1,7 +1,3 @@
-# Copyright 2023 Alex Walters, all rights reserved
-# I intend to make this open source, eventually... but its
-# still kinda janky (and needs a UI yet), and I hope the
-# copyright will scare you into not using it
 import pathlib
 import shutil
 import subprocess
