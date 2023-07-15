@@ -8,9 +8,14 @@ dependencies = [
 [project.scripts]
 demo = "demo:main [icon=python.ico]"
 
+[project.gui-scripts]
+demog = "demo:gui [icon=python.ico]"
+
 [tool.pydumb]
 src = [
-    'demo.py',
+    'demo',
+    'notdemo',
 ]
+need_tkinter = true
 py_version = '3.10.6'
 machine = 'win32'
