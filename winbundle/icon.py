@@ -61,20 +61,12 @@ class IconFile:
         )
 
 
-def apply_icon(dstpath, srcpath):
-    icon = IconFile(srcpath)
-    hdst = win32api.BeginUpdateResource(str(dstpath), 0)
+def apply_icon(exe, icon):
+    icon = IconFile(icon)
+    hdst = win32api.BeginUpdateResource(str(exe), 0)
     data = icon.group_icon_header()
     data = data + icon.group_icon_header_entires(1)
     win32api.UpdateResource(hdst, RT_GROUP_ICON, 0, data)
     for data in icon.images:
         win32api.UpdateResource(hdst, RT_ICON, 1, data)
     win32api.EndUpdateResource(hdst, 0)
-
-
-if __name__ == "__main__":
-    import sys
-
-    dstpath = sys.argv[1]
-    srcpath = sys.argv[2]
-    apply_icon(dstpath, srcpath)
