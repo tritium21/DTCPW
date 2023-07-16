@@ -10,6 +10,7 @@ import zipfile
 import distlib.scripts
 
 import winbundle.util
+import winbundle.icon
 
 
 def _get_launcher(self, kind):
@@ -63,7 +64,6 @@ class Builder:
         )
         self.dependencies = [] if dependencies is None else dependencies
         self.files = files
-        self._rh_path = self._cache_path / 'resourcehacker'
         self._wix_path = self._cache_path / 'wix'
 
     @classmethod
@@ -119,17 +119,9 @@ class Builder:
         )
         return self._download_item(url)
 
-    def _download_resource_hacker(self):
-        url = "http://www.angusj.com/resourcehacker/resource_hacker.zip"
-        return self._download_item(url)
-
     def _extract_wix(self, path):
         with zipfile.ZipFile(path) as zf:
             zf.extractall(self._wix_path)
-
-    def _extract_resource_hacker(self, path):
-        with zipfile.ZipFile(path) as zf:
-            zf.extractall(self._rh_path)
 
     def _extract_python(self, path):
         if not self._output_path.exists():
@@ -184,21 +176,10 @@ class Builder:
     def _add_icon(self, exes, icon):
         if not icon:
             return
-        if not self._rh_path.is_dir():
-            rh = self._download_resource_hacker()
-            self._extract_resource_hacker(rh)
-            self._has_rh = True
         icon = self.root / icon
         exes = [pathlib.Path(x).resolve() for x in exes]
         for exe in exes:
-            subprocess.run([
-                str(self._rh_path / 'ResourceHacker.exe'), '-open', str(exe), '-save', str(exe), '-action',
-                'delete', '-mask', 'ICONGROUP,101,'
-            ])
-            subprocess.run([
-                str(self._rh_path / 'ResourceHacker.exe'), '-open', str(exe), '-save', str(exe), '-action',
-                'addoverwrite', '-res', str(icon), '-mask', 'ICONGROUP,MAINICON,'
-            ])
+            winbundle.icon.apply_icon(exe, icon)
 
     def _install_dependencies(self):
         args = [sys.executable, '-m', 'pip', 'install', '--target', str(self._output_path)]
