@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "winbundle"
-version = "0.1.1"
+dynamic = ["version"]
 authors = [
     {name = "Alex Walters", email = "alex.walters@gmail.com"},
 ]
@@ -20,6 +20,8 @@ dependencies = [
     "construct",
 ]
 
+[tool.setuptools.dynamic]
+version = {attr = "winbundle.__version__"}
+
 [project.urls]
-# Documentation = "https://flit.pypa.io"
 Source = "https://github.com/tritium21/winbundle"
